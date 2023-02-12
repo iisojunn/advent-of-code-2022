@@ -25,38 +25,80 @@ CHOICE_SCORE = {
 }
 
 
-class MatchScore(Enum):
-    WIN = 6
-    TIE = 3
-    LOSE = 0
+class MatchResult(Enum):
+    WIN = "WIN"
+    TIE = "TIE"
+    LOSE = "LOSE"
 
+
+ROUND_TARGET = {
+    "X": MatchResult.LOSE,
+    "Y": MatchResult.TIE,
+    "Z": MatchResult.WIN,
+}
 
 MATCH_SCORE = {
-    (ROCK, PAPER): MatchScore.WIN,
-    (PAPER, SCISSORS): MatchScore.WIN,
-    (SCISSORS, ROCK): MatchScore.WIN,
-    (ROCK, ROCK): MatchScore.TIE,
-    (PAPER, PAPER): MatchScore.TIE,
-    (SCISSORS, SCISSORS): MatchScore.TIE,
-    (PAPER, ROCK): MatchScore.LOSE,
-    (SCISSORS, PAPER): MatchScore.LOSE,
-    (ROCK, SCISSORS): MatchScore.LOSE,
+    MatchResult.WIN: 6,
+    MatchResult.TIE: 3,
+    MatchResult.LOSE: 0,
+}
+
+MATCH_RESULT = {
+    (ROCK, PAPER): MatchResult.WIN,
+    (PAPER, SCISSORS): MatchResult.WIN,
+    (SCISSORS, ROCK): MatchResult.WIN,
+    (ROCK, ROCK): MatchResult.TIE,
+    (PAPER, PAPER): MatchResult.TIE,
+    (SCISSORS, SCISSORS): MatchResult.TIE,
+    (PAPER, ROCK): MatchResult.LOSE,
+    (SCISSORS, PAPER): MatchResult.LOSE,
+    (ROCK, SCISSORS): MatchResult.LOSE,
+}
+
+REQUIRED_CHOICE = {
+    (ROCK, MatchResult.WIN): PAPER,
+    (ROCK, MatchResult.TIE): ROCK,
+    (ROCK, MatchResult.LOSE): SCISSORS,
+    (PAPER, MatchResult.WIN): SCISSORS,
+    (PAPER, MatchResult.TIE): PAPER,
+    (PAPER, MatchResult.LOSE): ROCK,
+    (SCISSORS, MatchResult.WIN): ROCK,
+    (SCISSORS, MatchResult.TIE): SCISSORS,
+    (SCISSORS, MatchResult.LOSE): PAPER,
+
 }
 
 
 def main():
+    file_name = sys.argv[1]
+
     score = 0
-    for opponent_choice, my_choice in strategy_guide(sys.argv[1]):
-        score += MATCH_SCORE[(opponent_choice.name, my_choice.name)].value
+    for opponent_choice, my_choice in strategy_guide_a(file_name):
+        score += MATCH_SCORE[MATCH_RESULT[(opponent_choice.name, my_choice.name)]]
         score += CHOICE_SCORE[my_choice.name]
     print(score)
 
+    score2 = 0
+    for opponent_choice, target in strategy_guide_b(file_name):
+        score2 += MATCH_SCORE[target]
+        score2 += CHOICE_SCORE[REQUIRED_CHOICE[(opponent_choice.name, target)]]
+    print(score2)
 
-def strategy_guide(file_name):
+
+def raw_data(file_name):
     with open(file_name) as file:
         for line in file.readlines():
-            opponent, me = line.strip().split(" ")
-            yield OpponentChoices(opponent), MyChoices(me)
+            yield line.strip().split(" ")
+
+
+def strategy_guide_a(file_name):
+    for opponent, me in raw_data(file_name):
+        yield OpponentChoices(opponent), MyChoices(me)
+
+
+def strategy_guide_b(file_name):
+    for opponent, target in raw_data(file_name):
+        yield OpponentChoices(opponent), ROUND_TARGET[target]
 
 
 if __name__ == '__main__':
