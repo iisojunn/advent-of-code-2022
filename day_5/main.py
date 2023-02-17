@@ -6,16 +6,21 @@ from itertools import takewhile
 
 def main():
     file_name = sys.argv[1]
-    crate_lines, instructions_lines = split_input_lines(raw_lines(file_name))
-    ships = initialize_ships(crate_lines)
-    move_crates(ships, instructions_lines)
+    crate_lines, ship_numbers_line, instructions_lines = split_input_lines(raw_lines(file_name))
+    ships = initialize_ships(crate_lines, ship_numbers_line)
+    move_crates(ships, instructions_lines, execute_instruction_crate_mover_9000)
     print(top_crates(ships))
+
+    ships2 = initialize_ships(crate_lines, ship_numbers_line)
+    move_crates(ships2, instructions_lines, execute_instruction_crate_mover_9001)
+    print(top_crates(ships2))
 
 
 def split_input_lines(line_generator):
     crate_lines = list(takewhile(not_empty_line, line_generator))
+    ship_numbers_line = crate_lines.pop()
     instruction_lines = list(line_generator)
-    return crate_lines, instruction_lines
+    return crate_lines, ship_numbers_line, instruction_lines
 
 
 def not_empty_line(x):
@@ -28,8 +33,7 @@ def raw_lines(file_name):
             yield line.rstrip()
 
 
-def initialize_ships(crate_lines):
-    ship_numbers_line = crate_lines.pop()
+def initialize_ships(crate_lines, ship_numbers_line):
     ships = {int(number): deque() for number in ship_numbers_line.split("   ")}
     for crate_line in crate_lines:
         for ship, crate in zip(ships.values(), crate_line[1::4]):
@@ -50,14 +54,20 @@ def parse_instruction(string):
     return Instruction(int(amount), int(from_), int(to))
 
 
-def move_crates(ships, instructions_lines):
+def move_crates(ships, instructions_lines, execute_instruction):
     for line in instructions_lines:
         execute_instruction(ships, parse_instruction(line))
 
 
-def execute_instruction(ships, instruction):
+def execute_instruction_crate_mover_9000(ships, instruction):
     for _ in range(instruction.amount):
         ships[instruction.to].append(ships[instruction.from_].pop())
+
+
+def execute_instruction_crate_mover_9001(ships, instruction):
+    crates = list(ships[instruction.from_].pop() for _ in range(instruction.amount))
+    for crate in reversed(crates):
+        ships[instruction.to].append(crate)
 
 
 def top_crates(ships):
