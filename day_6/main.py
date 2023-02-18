@@ -6,7 +6,9 @@ def main():
     file_name = sys.argv[1]
     signals = tuple(read_input(file_name))
     for signal in signals:
-        print(start_marker_position(signal))
+        print(detect_distinct_marker_position(signal, distinct_length=4))
+    for signal in signals:
+        print(detect_distinct_marker_position(signal, distinct_length=14))
 
 
 def read_input(file_name):
@@ -15,9 +17,9 @@ def read_input(file_name):
             yield line.strip()
 
 
-def start_marker_position(signal, marker_length=4):
-    buffer = deque(signal[:marker_length])
-    for position, char in enumerate(signal[marker_length:], start=marker_length):
+def detect_distinct_marker_position(signal, distinct_length):
+    buffer = deque(signal[:distinct_length])
+    for position, char in enumerate(signal[distinct_length:], start=distinct_length):
         if is_all_different(buffer):
             return position
         buffer.popleft()
