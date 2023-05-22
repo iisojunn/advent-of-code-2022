@@ -58,11 +58,11 @@ def parse_filesystem_status(commands, root):
             handle_ls(command, current_dir)
 
 
-def directories_less_than(max_size, directory):
-    for directory in filter(lambda x: isinstance(x, Directory), directory.children.values()):
-        if directory.size <= max_size:
-            yield directory.size
-        yield from directories_less_than(max_size, directory)
+def directories_fulfilling(_function, directory):
+    if _function(directory):
+        yield directory.size
+    for sub_dir in filter(lambda x: isinstance(x, Directory), directory.children.values()):
+        yield from directories_fulfilling(_function, sub_dir)
 
 
 def main():
@@ -70,7 +70,13 @@ def main():
     commands = input_content(file_name).split("$ ")
     root = Directory("/", None)
     parse_filesystem_status(commands, root)
-    print(sum(directories_less_than(100_000, root)))
+    print(sum(directories_fulfilling(lambda x: x.size <= 100_000, root)))
+
+    total_disk_space = 70_000_000
+    required_free_space = 30_000_000
+    free_disk_space = total_disk_space - root.size
+    need_to_free_space = required_free_space - free_disk_space
+    print(min(directories_fulfilling(lambda x: x.size >= need_to_free_space, root)))
 
 
 def input_content(file_name):
