@@ -61,14 +61,15 @@ MOVE_FUNCTIONS = {
 }
 
 
-def visited_locations_for_tail(instructions):
-    head, tail = (0, 0), (0, 0)
-    visited_locations = {tail}
+def visited_locations_for_tail(instructions, rope_length=2):
+    rope = [(0, 0) for _ in range(rope_length)]
+    visited_locations = {rope[-1]}
     for move, amount in instructions:
         for _ in range(amount):
-            head = move(head)
-            tail = move_tail(head, tail)
-            visited_locations.update([tail])
+            rope[0] = move(rope[0])
+            for i in range(1, rope_length):
+                rope[i] = move_tail(rope[i - 1], rope[i])
+            visited_locations.update([rope[-1]])
     return visited_locations
 
 
@@ -80,9 +81,11 @@ def read_instructions(filename):
 
 
 def main():
-    instructions = read_instructions(sys.argv[1])
+    instructions = list(read_instructions(sys.argv[1]))
     visited_locations = visited_locations_for_tail(instructions)
     print(len(visited_locations))
+    visited_locations2 = visited_locations_for_tail(instructions, 10)
+    print(len(visited_locations2))
 
 
 if __name__ == '__main__':
