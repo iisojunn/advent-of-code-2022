@@ -5,11 +5,12 @@ from functools import reduce
 
 
 class Monkey:
-    def __init__(self, number, items, operation, test, true_monkey, false_monkey):
+    def __init__(self, number, items, operation, divisor, true_monkey, false_monkey):
         self.number = number
         self.items = items
         self.operation = operation
-        self.test = test
+        self.divisor = divisor
+        self.test = test_generator(divisor)
         self.true_monkey = true_monkey
         self.false_monkey = false_monkey
         self.inspection_count = 0
@@ -17,14 +18,14 @@ class Monkey:
     def __repr__(self):
         return f"Monkey {self.number}: items {list(self.items)}, inspections: {self.inspection_count}"
 
-    def take_turn(self):
+    def take_turn(self, worry_level_divider):
         to_true_monkey = deque()
         to_false_monkey = deque()
         while self.items:
             item = self.items.popleft()
             self.inspection_count += 1
             item = self.operation(item)
-            item = int(item / 3)
+            item = worry_level_divider(item)
             if self.test(item):
                 to_true_monkey.append(item)
             else:
@@ -40,10 +41,10 @@ class Monkey:
         number = int(lines[0].replace("Monkey ", "").replace(":", ""))
         items = deque(int(item) for item in lines[1].replace("  Starting items: ", "").replace(" ", "").split(","))
         operation = operation_generator(lines[2].split("= ")[1])
-        test = divisible_generator(int(lines[3].replace("Test: divisible by ", "")))
+        divisor = int(lines[3].replace("Test: divisible by ", ""))
         true_monkey = int(lines[4].split(" ")[-1])
         false_monkey = int(lines[5].split(" ")[-1])
-        return Monkey(number, items, operation, test, true_monkey, false_monkey)
+        return Monkey(number, items, operation, divisor, true_monkey, false_monkey)
 
 
 def operation_generator(definition):
@@ -53,7 +54,7 @@ def operation_generator(definition):
     return operation
 
 
-def divisible_generator(number):
+def test_generator(number):
     def divisible_by(value):
         return value % number == 0
 
@@ -77,9 +78,9 @@ def grab_items(monkeys, thrown_items):
         monkeys[to_monkey].items.extend(items)
 
 
-def play_round(monkeys):
+def play_round(monkeys, worry_level_divider):
     for monkey in monkeys.values():
-        thrown_items = monkey.take_turn()
+        thrown_items = monkey.take_turn(worry_level_divider)
         grab_items(monkeys, thrown_items)
 
 
@@ -88,13 +89,25 @@ def most_active_monkeys(monkeys, count=2):
     return sorted_monkeys[:count]
 
 
+def monkey_business(monkeys):
+    return reduce(operator.mul, (monkey.inspection_count for monkey in most_active_monkeys(monkeys)))
+
+
+def common_denominator(monkeys):
+    return reduce(operator.mul, (monkey.divisor for monkey in monkeys.values()))
+
+
 def main():
     data = read_input(sys.argv[1])
     monkeys = parse_monkeys(data)
     for _ in range(20):
-        play_round(monkeys)
-    monkey_business = reduce(operator.mul, (monkey.inspection_count for monkey in most_active_monkeys(monkeys)))
-    print(monkey_business)
+        play_round(monkeys, worry_level_divider=lambda x: int(x / 3))
+    print(monkey_business(monkeys))
+
+    monkeys = parse_monkeys(data)
+    for round_ in range(10000):
+        play_round(monkeys, worry_level_divider=lambda x: x % common_denominator(monkeys))
+    print(monkey_business(monkeys))
 
 
 if __name__ == '__main__':
