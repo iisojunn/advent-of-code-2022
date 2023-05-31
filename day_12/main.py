@@ -1,5 +1,6 @@
 import math
 import sys
+from collections import defaultdict
 
 import heapdict
 
@@ -51,13 +52,19 @@ def steps_for(spot, width, height):
         yield spot[0], spot[1] + 1
 
 
-def step_map(elevation_map, width, height):
-    step_map_ = {}
+def possible_steps_for_spot(elevation_map, width, height):
     for spot, elevation in elevation_map.items():
-        step_map_[spot] = set()
         for step in steps_for(spot, width, height):
             if elevation_map[step] <= elevation + 1:
-                step_map_[spot].add(step)
+                yield spot, step
+
+
+def step_map(elevation_map, width, height, reverse=False):
+    step_map_ = defaultdict(lambda: set())
+    for spot, step in possible_steps_for_spot(elevation_map, width, height):
+        if reverse:
+            spot, step = step, spot
+        step_map_[spot].add(step)
     return step_map_
 
 
@@ -71,11 +78,11 @@ def construct_path(previous, current):
         path.append(current)
 
 
-def dijkstra(possible_steps, start, end):
+def dijkstra(all_spots, possible_steps, start, ends):
     distance = {start: 0}
     previous = {}
     priority_queue = heapdict.heapdict()
-    for spot in possible_steps.keys():
+    for spot in all_spots:
         if spot != start:
             distance[spot] = math.inf
             previous[spot] = None
@@ -89,8 +96,12 @@ def dijkstra(possible_steps, start, end):
                 distance[next_spot] = new_distance
                 previous[next_spot] = spot
                 priority_queue[next_spot] = new_distance
-            if next_spot == end:
-                return construct_path(previous, end)
+            if next_spot in ends:
+                return construct_path(previous, next_spot)
+
+
+def spots_with_elevation(elevation_map, elevation):
+    return [spot for spot, value in elevation_map.items() if value == elevation]
 
 
 def main():
@@ -98,10 +109,15 @@ def main():
     width = len(data)
     height = len(data[0])
     map2d = to_map(data)
+    all_spots = list(map2d.keys())
     start, end = resolve_start_and_end(map2d)
     elevation_map = to_elevation_map(map2d)
     possible_steps = step_map(elevation_map, width, height)
-    path = dijkstra(possible_steps, start, end)
+    path = dijkstra(all_spots, possible_steps, start, [end])
+    print(len(path) - 1)
+
+    reverse_possible_steps = step_map(elevation_map, width, height, reverse=True)
+    path = dijkstra(all_spots, reverse_possible_steps, end, spots_with_elevation(elevation_map, elevation=0))
     print(len(path) - 1)
 
 
