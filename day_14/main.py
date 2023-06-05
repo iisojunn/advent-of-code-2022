@@ -44,11 +44,11 @@ def lowest_level(cave):
     return max(height for _, height in cave.keys())
 
 
-class FellIntoAbyss(Exception):
+class SandUnitFellIntoAbyss(Exception):
     pass
 
 
-class SandUnitStopped(Exception):
+class SandUnitAtRest(Exception):
     pass
 
 
@@ -70,7 +70,11 @@ def next_sand_location(cave, sand_location):
     for location in possible_next_locations(sand_location):
         if location not in cave.keys():
             return location
-    raise SandUnitStopped
+    raise SandUnitAtRest
+
+
+class CaveFullOfSand(Exception):
+    pass
 
 
 def add_sand_unit(cave, sand_source, abyss_level):
@@ -78,11 +82,13 @@ def add_sand_unit(cave, sand_source, abyss_level):
     while True:
         try:
             sand_location = next_sand_location(cave, sand_location)
-        except SandUnitStopped:
+        except SandUnitAtRest:
             break
         if sand_location[1] >= abyss_level:
-            raise FellIntoAbyss
+            raise SandUnitFellIntoAbyss
     cave[sand_location] = Content.sand
+    if sand_location == sand_source:
+        raise CaveFullOfSand
 
 
 def fill_with_sand(cave, sand_source):
@@ -90,8 +96,18 @@ def fill_with_sand(cave, sand_source):
     while True:
         try:
             add_sand_unit(cave, sand_source, abyss_level)
-        except FellIntoAbyss:
+        except (SandUnitFellIntoAbyss, CaveFullOfSand):
             break
+
+
+def sand_amount_in(cave):
+    return len(list(content for content in cave.values() if content == Content.sand))
+
+
+def add_cave_floor(cave, sand_source, floor_level):
+    """Adds a floor 2 times as wide as the height from sand source to the floor level"""
+    for x in range(sand_source[0] - floor_level, sand_source[0] + floor_level + 1):
+        cave[(x, floor_level)] = Content.rock
 
 
 def main():
@@ -99,7 +115,12 @@ def main():
     cave = construct_cave(data)
     sand_source = (500, 0)
     fill_with_sand(cave, sand_source)
-    print(len(list(content for content in cave.values() if content == Content.sand)))
+    print(sand_amount_in(cave))
+
+    cave = construct_cave(data)
+    add_cave_floor(cave, sand_source, lowest_level(cave) + 2)
+    fill_with_sand(cave, sand_source)
+    print(sand_amount_in(cave))
 
 
 if __name__ == '__main__':
